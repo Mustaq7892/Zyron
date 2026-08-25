@@ -1,0 +1,76 @@
+# ============================================================
+# Zyron - Git Ignore Rules
+# ============================================================
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+
+# Virtual environments
+.venv/
+.venv*/
+venv/
+env/
+
+# Environment / secrets
+.env
+.env.*
+!.env.example
+
+# IDE / editor
+.vscode/
+.idea/
+
+# OS files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Logs
+*.log
+
+# Audio / generated media
+*.wav
+*.mp3
+*.ogg
+*.flac
+
+# Local AI models
+models/
+*.onnx
+*.onnx.json
+
+# Python / test caches
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# Local/runtime data
+data/
+
+# Temporary / backup files
+*.bak
+*.tmp
+*.temp
+
+# Zyron temporary snapshots / local copies
+current_agent.py
+
+# Development backup snapshots
+*.before_*
+*.phase3_stable
+*_backup.py
+*backup*.py
+
+# Additional development snapshots
+*_before_*.py
+*_after_*.py
+
+# Old development copies
+*_old.py
+
+# Old development copies
+*_old.py
