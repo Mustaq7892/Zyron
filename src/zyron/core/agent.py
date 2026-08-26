@@ -1466,6 +1466,35 @@ If no capability is required:
 
         if parsed is None:
 
+            if (
+                candidate_tools
+                and len(candidate_tools) == 1
+            ):
+                fallback_tool = candidate_tools[0]
+
+                fallback_arguments = (
+                    self._extract_grounded_arguments(
+                        command,
+                        fallback_tool,
+                    )
+                )
+
+                fallback_plan = {
+                    "needs_tools": True,
+                    "plan": [
+                        {
+                            "tool": fallback_tool,
+                            "arguments": fallback_arguments,
+                        }
+                    ],
+                    "response": "",
+                }
+
+                return self._normalize_plan(
+                    fallback_plan,
+                    command,
+                )
+
             return {
                 "needs_tools": False,
                 "plan": [],
@@ -3550,6 +3579,121 @@ If no capability is required:
                 )
             )
         )
+
+
+        # ========================================================
+    # EXTRACT EXPLICITLY GROUNDED ARGUMENTS
+    # ========================================================
+
+    def _extract_grounded_arguments(
+        self,
+        command,
+        tool_name,
+    ):
+        """
+        Extract only argument values that are clearly present
+        in the user's command.
+
+        This helper is intentionally conservative. It must never
+        invent or default a required argument.
+        """
+
+        command = str(command).strip()
+
+        if not command:
+            return {}
+
+        tool = self.tool_registry.get(
+            tool_name
+        )
+
+        if tool is None:
+            return {}
+
+        parameters = tool.get(
+            "parameters",
+            {},
+        )
+
+        if not isinstance(
+            parameters,
+            dict,
+        ):
+            return {}
+
+        # Support JSON-Schema object format.
+        if (
+            parameters.get("type") == "object"
+            and isinstance(
+                parameters.get("properties"),
+                dict,
+            )
+        ):
+            properties = parameters.get(
+                "properties",
+                {},
+            )
+
+            required_names = set(
+                parameters.get(
+                    "required",
+                    [],
+                )
+            )
+
+            parameters = {
+                name: {
+                    **(
+                        info
+                        if isinstance(
+                            info,
+                            dict,
+                        )
+                        else {}
+                    ),
+                    "required": (
+                        name in required_names
+                    ),
+                }
+                for name, info in properties.items()
+            }
+
+        grounded = {}
+
+        # ----------------------------------------------------
+        # Explicit email address.
+        # ----------------------------------------------------
+
+        email_matches = re.findall(
+            r"(?<![\w.+-])[\w.+-]+@[\w.-]+\.[A-Za-z]{2,}(?![\w.-])",
+            command,
+        )
+
+        if email_matches:
+
+            email_value = email_matches[0]
+
+            for parameter_name in parameters:
+
+                normalized_name = str(
+                    parameter_name
+                ).strip().lower()
+
+                if normalized_name in {
+                    "recipient",
+                    "email",
+                    "email_address",
+                    "to",
+                    "address",
+                }:
+                    grounded[
+                        parameter_name
+                    ] = email_value
+
+                    break
+
+        return grounded
+
 
     # ========================================================
     # EXTRACT SINGLE STRING TOOL ARGUMENT
