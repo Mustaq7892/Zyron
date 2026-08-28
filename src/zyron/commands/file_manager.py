@@ -583,6 +583,7 @@ def create_file(file_name):
 def write_file(
     file_name,
     content,
+    overwrite=False,
 ):
     """
     Write text content into an existing file inside
@@ -638,6 +639,21 @@ def write_file(
         return (
             f"'{file_name}' is not a file."
         )
+
+    # --------------------------------------------------------
+    # Protect existing files from accidental overwrites.
+    # --------------------------------------------------------
+
+    if not overwrite:
+
+        return (
+            f"The file '{file_name}' already exists. "
+            "Overwriting requires explicit permission."
+        )
+
+    # --------------------------------------------------------
+    # Write the content.
+    # --------------------------------------------------------
 
     # --------------------------------------------------------
     # Write the content.
