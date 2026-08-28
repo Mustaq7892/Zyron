@@ -267,6 +267,28 @@ def handle_application_command(command):
     text = command.lower().strip()
 
     # --------------------------------------------------------
+    # Reject explicit negative requests.
+    # --------------------------------------------------------
+
+    negative_phrases = (
+        "don't open",
+        "dont open",
+        "do not open",
+        "don't launch",
+        "dont launch",
+        "do not launch",
+        "don't start",
+        "dont start",
+        "do not start",
+        "don't run",
+        "dont run",
+        "do not run",
+    )
+
+    if any(phrase in text for phrase in negative_phrases):
+        return None
+
+    # --------------------------------------------------------
     # Determine whether this is actually an OPEN request.
     # --------------------------------------------------------
 
@@ -275,7 +297,6 @@ def handle_application_command(command):
         "launch",
         "start",
         "run",
-        "show",
     )
 
     has_open_action = any(
