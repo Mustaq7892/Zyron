@@ -1,4 +1,4 @@
-﻿from .tool_registry import ToolRegistry
+from .tool_registry import ToolRegistry
 
 from ..ai.ollama_client import ask_ollama
 
@@ -539,6 +539,7 @@ def create_file_tool(
 def write_file_tool(
     file_name: str,
     content: str,
+    overwrite: bool = False,
 ):
     """
     Write content into an existing file inside
@@ -557,6 +558,7 @@ def write_file_tool(
     return write_file(
         file_name,
         content,
+        overwrite=overwrite,
     )
 
 
@@ -880,12 +882,15 @@ def register_core_tools(
                 "type": "string",
                 "required": True,
             },
+            "overwrite": {
+                "type": "boolean",
+                "required": False,
+            },
         },
         requires_confirmation=True,
     )
 
-    # --------------------------------------------------------
-    # OPEN FILE
+
     # --------------------------------------------------------
 
     registry.register(

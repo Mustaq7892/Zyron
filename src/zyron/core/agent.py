@@ -4298,8 +4298,31 @@ If no capability is required:
 
         self._pending_confirmation = None
 
+        authorized_plan = {
+            "needs_tools": True,
+            "plan": [],
+            "response": "",
+        }
+
+        for step in pending["plan"].get("plan", []):
+            authorized_step = dict(step)
+
+            if authorized_step.get("tool") == "write_file":
+                arguments = dict(
+                    authorized_step.get(
+                        "arguments",
+                        {},
+                    )
+                )
+                arguments["overwrite"] = True
+                authorized_step["arguments"] = arguments
+
+            authorized_plan["plan"].append(
+                authorized_step
+            )
+
         results = self.execute_plan(
-            pending["plan"]
+            authorized_plan
         )
 
         response = self.create_final_response(
