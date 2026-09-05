@@ -1,4 +1,4 @@
-# <img src="assets/zyron-icon.svg" width="32" valign="middle"> Zyron — A Local, Tool-Using AI Assistant
+# <img src="assets/zyron-icon.svg" width="32"> Zyron — A Local, Tool-Using AI Assistant
 
 <p align="center">
   <img src="assets/zyron-banner.svg" alt="Zyron — Personal AI Assistant">
@@ -49,8 +49,6 @@ The project focuses on being **predictable, extensible, testable, and safety-con
 - [Design Philosophy](#-design-philosophy)
 - [Roadmap](#️-roadmap)
 - [Project Status](#-project-status)
-- [Contributing](#-contributing)
-- [Contact / Support](#-contact--support)
 - [About Me](#-about-me)
 - [License](#-license)
 
@@ -640,31 +638,13 @@ The project is currently **paused at this stable checkpoint** while the surround
 
 ---
 
-## 🤝 Contributing
-
-This is currently a solo portfolio project, and formal contribution guidelines have not yet been defined. If you'd like to report a bug or suggest an improvement, please open an issue on the [GitHub repository](https://github.com/Mustaq7892/Zyron/issues).
-
----
-
-## 📬 Contact / Support
-
-The primary project home is the GitHub repository: [github.com/Mustaq7892/Zyron](https://github.com/Mustaq7892/Zyron). You can also reach out via [LinkedIn](https://www.linkedin.com/in/shaik-mustaq-915741254/).
-
----
-
 ## 👨‍💻 About Me
 
-Hi, I'm **Shaik Mustaq** — a Software Engineer with **2+ years of professional experience**, with interests across:
-- Software Development
-- Data Engineering
-- Python
-- SQL
-- AI-assisted systems
-- Automation
+I'm **Shaik Mustaq**, a Software Engineer with over two years of professional experience building backend systems, working with data pipelines, and developing with Python and SQL.
 
-Zyron is where I explored how LLM tool-calling can be built from the ground up rather than relying entirely on an agent framework.
+Zyron reflects how I like to work: understanding a problem deeply enough to build it from first principles rather than reaching for the nearest framework.
 
-The project gave me hands-on experience with LLM planning, capability-based architecture, reflection and parameter inference, argument grounding, validation, multi-turn clarification, safety and authorization flows, filesystem and application integration, SQLite persistence, voice processing, and automated testing.
+Instead of relying on an existing agent framework, I built Zyron's planning, capability discovery, parameter inference, argument validation, clarification, and confirmation flow myself.
 
 I build practical projects to strengthen my software engineering and data engineering skills through implementation.
 
