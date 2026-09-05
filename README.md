@@ -17,107 +17,81 @@
 
 ---
 
-Zyron is a **from-scratch LLM tool-calling system**: a local AI model (via Ollama) plans which registered capability to run, an argument-validation layer checks the plan before anything executes, and the assistant asks for missing information instead of guessing.
+## What is Zyron?
 
-There's no agent framework underneath — the planning loop, capability discovery, parameter inference, argument grounding, and validation logic are built in Python.
+Zyron is a **from-scratch LLM tool-calling system** built in Python around a local Ollama model.
 
-> **Design principle:** when information is missing, Zyron asks — it never silently invents a value.
+Instead of relying on an agent framework, Zyron implements its own:
 
-The project focuses on being **predictable, extensible, testable, and safety-conscious** rather than adding features for their own sake.
+- capability discovery
+- tool registration
+- parameter inference
+- argument grounding and validation
+- multi-turn clarification
+- confirmation-based execution
 
----
+The core principle is simple:
 
-## 📑 Table of Contents
-
-- [What This Project Demonstrates](#-what-this-project-demonstrates)
-- [System Architecture](#️-system-architecture)
-- [Engineering Highlight: Automatic Parameter Inference](#-engineering-highlight-automatic-parameter-inference)
-- [AI Planning](#-ai-planning)
-- [Dynamic Capability Planning](#-dynamic-capability-planning)
-- [Argument Safety](#️-argument-safety)
-- [Multi-Argument Clarification](#-multi-argument-clarification)
-- [Safe Execution & Confirmation](#️-safe-execution--confirmation)
-- [Persistent Memory](#-persistent-memory)
-- [Voice Interaction](#️-voice-interaction)
-- [Web Search](#-web-search)
-- [System & File Capabilities](#-system--file-capabilities)
-- [Technology Stack](#️-technology-stack)
-- [Repository Structure](#-repository-structure)
-- [Testing](#-testing)
-- [Getting Started](#-getting-started)
-- [Configuration](#️-configuration)
-- [Design Philosophy](#-design-philosophy)
-- [Roadmap](#️-roadmap)
-- [Project Status](#-project-status)
-- [About Me](#-about-me)
-- [License](#-license)
+> **When information is missing, Zyron asks instead of guessing.**
 
 ---
 
-## 🎯 What This Project Demonstrates
+## What This Project Demonstrates
 
-| Skill | How it shows up in the code |
+| Area | Implementation |
 |---|---|
-| **LLM tool-calling architecture** | Hand-built plan → validate → execute loop against a local model — no agent framework |
-| **Reflection-based API design** | `ToolRegistry` derives parameter names, types, and required/optional status from a function's signature and type hints |
-| **Dynamic capability discovery** | The planner works against registered capabilities rather than a large hard-coded command list |
-| **Defensive input validation** | Plans are checked for missing required arguments, unknown arguments, and ungrounded values before execution |
-| **Safe file handling** | File operations include path-safety checks and sensitive operations use confirmation |
-| **SQL parameterization** | SQLite persistence uses parameterized queries in the memory layer |
-| **Multi-turn state handling** | Missing arguments can be collected across subsequent user messages |
-| **Test discipline** | 34 automated tests pass across argument safety, clarification, routing, application, file, and regression behavior |
+| **LLM tool calling** | Hand-built plan → validate → execute flow using a local model |
+| **Dynamic capabilities** | Planner works with registered capabilities instead of a large hard-coded command list |
+| **Reflection-based design** | `ToolRegistry` derives parameter metadata from Python function signatures and type hints |
+| **Argument safety** | Missing, unknown, and ungrounded arguments are checked before execution |
+| **Safe execution** | Sensitive file operations require confirmation and overwrite protection |
+| **Multi-turn interaction** | Missing arguments can be collected through follow-up messages |
+| **Persistence** | SQLite-backed conversation history and explicit memory |
+| **Testing** | 34 automated tests covering safety, clarification, routing, file/application behavior, and regressions |
 
 ---
 
-## 🏗️ System Architecture
-
-Zyron follows a layered design built around **capabilities** rather than a large collection of hard-coded commands.
+## Architecture
 
 ```text
                          ┌──────────────────────┐
-                         │         User          │
-                         │     Text / Voice      │
+                         │         User         │
+                         │     Text / Voice     │
                          └───────────┬──────────┘
                                      │
                                      ▼
                          ┌──────────────────────┐
-                         │     Zyron Router      │
+                         │    Zyron Router      │
                          └───────────┬──────────┘
                                      │
                                      ▼
                          ┌──────────────────────┐
-                         │      Zyron Agent      │
-                         │                       │
-                         │ Planning · Grounding  │
-                         │      Validation       │
-                         └───────────┬───────────┘
+                         │     Zyron Agent      │
+                         │ Planning · Grounding │
+                         │      Validation     │
+                         └───────────┬──────────┘
                                      │
                                      ▼
                          ┌──────────────────────┐
-                         │     Tool Registry     │
-                         │ Registered Capabilities│
-                         └───────────┬───────────┘
+                         │    Tool Registry     │
+                         │ Registered Capability│
+                         └───────────┬──────────┘
                                      │
                     ┌────────────────┼────────────────┐
-                    │                │                │
                     ▼                ▼                ▼
                  System            File             Web
                  Tools             Tools           Search
                     │                │                │
                     └────────────────┼────────────────┘
-                                     │
                                      ▼
                          ┌──────────────────────┐
-                         │  Safety / Control    │
-                         │ Validation +         │
-                         │ Confirmation         │
+                         │   Safety / Control   │
+                         │ Validation + Confirm  │
                          └───────────┬──────────┘
-                                     │
                                      ▼
                          ┌──────────────────────┐
                          │      Execution       │
                          └───────────┬──────────┘
-                                     │
                                      ▼
                          ┌──────────────────────┐
                          │       Response       │
@@ -146,17 +120,25 @@ Controlled Execution
 Response
 ```
 
-The key architectural boundary is that **the language model can propose a plan, but the application controls whether that plan is valid and executable** — AI interpretation never has direct access to execution.
+The important boundary is:
+
+```text
+AI Interpretation
+       ↓
+Application Validation
+       ↓
+Authorization / Confirmation
+       ↓
+Execution
+```
+
+The language model proposes a plan; the application decides whether that plan is valid and executable.
 
 ---
 
-## 🧠 Engineering Highlight: Automatic Parameter Inference
+## Engineering Highlight: Automatic Parameter Inference
 
-One of the key design decisions in Zyron is reducing manual schema maintenance.
-
-The `ToolRegistry` can inspect a Python function's signature and derive parameter information from its type hints and defaults.
-
-For example:
+Zyron reduces manual tool-schema maintenance by inspecting Python function signatures.
 
 ```python
 def _infer_parameters(self, function):
@@ -183,116 +165,59 @@ def _infer_parameters(self, function):
     return parameters
 ```
 
-This creates a direct relationship between:
+This creates:
 
 ```text
-Python Function → Function Signature → Tool Metadata → AI Planning → Argument Validation
+Python Function
+      ↓
+Function Signature
+      ↓
+Tool Metadata
+      ↓
+AI Planning
+      ↓
+Argument Validation
 ```
 
-The result is less manual schema duplication and a capability system that can evolve with the underlying Python functions.
+The approach reduces duplicated schema definitions and lets the capability layer evolve with the Python functions.
 
 ---
 
-## 🧠 AI Planning
+## AI Planning & Dynamic Capabilities
 
-Zyron uses **Ollama** as its local AI engine.
-
-Current configuration:
+Zyron uses **Ollama** with the `phi4-mini` model.
 
 ```text
 Model: phi4-mini
 Endpoint: http://localhost:11434/api/generate
 ```
 
-The AI layer interprets user requests and determines which registered capability should be used. The planner is constrained to the capabilities actually available through Zyron's tool registry.
-
-The intended flow is:
-
-```text
-Natural-language request → Local LLM → Structured capability plan → Application validation → Execution or clarification
-```
-
-The model therefore acts as a planning component rather than being given unrestricted control over system operations.
-
----
-
-## 🧭 Dynamic Capability Planning
-
-The planner separates:
-
-```text
-What the user wants
-        ↓
-Which capability can perform it
-        ↓
-Which arguments are required
-        ↓
-Which arguments are available
-        ↓
-Whether the arguments are valid
-        ↓
-Execution
-```
-
-The planner is instructed to:
+The planner is constrained to registered capabilities and is instructed to:
 
 - use only registered capabilities
-- never invent capabilities
+- never invent capability names
 - never invent parameter names
 - never guess missing values
 - use values grounded in the user's request
 - leave missing required arguments absent
 - request clarification when required information is missing
 
-This allows capabilities to be added through the registry without continuously expanding a large hard-coded command router.
-
----
-
-## 🛡️ Argument Safety
-
-A major design goal of Zyron is preventing the AI planner from silently inventing arguments.
-
 Example:
 
 ```text
-User: "Calculate 10 multiplied"
+User:
+Calculate 10 multiplied
 ```
 
-If the capability requires:
-
-```text
-value
-multiplier
-```
-
-Zyron should **not** silently assume `multiplier = 1`. Instead:
-
-```text
-I need 'multiplier' before I can continue.
-Please provide it.
-```
-
-The important boundary is:
-
-```text
-AI Interpretation → Argument Grounding → Required Argument Validation → Clarification if Missing → Execution
-```
-
-This behavior is enforced by the validation flow and covered by automated tests.
+If `multiplier` is required, Zyron should ask for it rather than silently assuming a value.
 
 ---
 
-## 💬 Multi-Argument Clarification
+## Clarification & Safe Execution
 
-Zyron supports clarification when multiple required arguments are missing.
+Zyron supports multi-turn clarification.
 
-Example:
-
-```text
-User: "Perform the action for test@example.com"
-```
-
-Suppose the capability requires:
+For example, if a capability requires:
 
 ```text
 recipient
@@ -300,99 +225,118 @@ subject
 body
 ```
 
-Zyron can recognize that `recipient` is available while `subject` and `body` are missing, and respond:
+and the user provides only:
+
+```text
+recipient = test@example.com
+```
+
+Zyron can respond:
 
 ```text
 I need 'subject' and 'body' before I can use 'fake_action'.
 Please provide them.
 ```
 
-The user can then provide the missing information across subsequent messages. Only after the required arguments are available should the capability execute. This behavior is covered by dedicated automated tests.
-
----
-
-## 🛡️ Safe Execution & Confirmation
-
-Some capabilities can modify the local environment and therefore require an additional control layer.
-
-Sensitive operations such as `Write`, `Delete`, and `Rename` use confirmation before execution.
-
-Conceptually:
+Sensitive operations such as:
 
 ```text
-User Request → Capability Planning → Argument Validation → Sensitive Operation?
-   → YES → Ask for Confirmation → User Confirms → Authorized Plan → Controlled Execution
+Write
+Delete
+Rename
 ```
 
-The key principle is:
+require confirmation before execution.
+
+For file writing, accidental overwrites are also protected unless overwrite is explicitly authorized through the confirmation flow.
 
 > **A plan is not automatically authorization.**
 
-For file-writing operations, Zyron also protects against accidental overwrites unless overwrite is explicitly authorized through the confirmation flow.
+---
+
+## Persistent Memory
+
+Zyron uses **SQLite** for local persistence.
+
+It separates:
+
+- conversation history
+- explicit memories
+
+Supported memory operations include:
+
+```text
+Remember
+Forget
+Forget by ID
+Clear
+```
+
+The memory layer uses parameterized SQLite queries, and runtime data is excluded from version control.
 
 ---
 
-## 💾 Persistent Memory
+## Voice Interaction
 
-Zyron includes a **SQLite-backed conversation memory system**. The memory layer separates normal conversation history from explicit memories.
+Zyron includes a local voice pipeline.
 
-### Conversation History
-Recent conversation messages are retained according to the configured conversation limit.
+### Speech-to-Text
 
-### Explicit Memories
-User-requested memories are stored separately and are not removed by the normal conversation-history limit.
+**Faster-Whisper** handles local speech recognition, including microphone input, speech detection, silence handling, audio validation, and transcription.
 
-Supported operations include: `Remember`, `Forget`, `Forget by ID`, `Clear`.
+### Text-to-Speech
 
-The local memory database is stored inside the `data/` directory. Runtime data is excluded from version control.
+**Piper TTS** generates spoken responses.
 
-The memory layer uses parameterized SQLite queries rather than constructing SQL statements from user-provided values.
+Voice features are currently developed and tested on Windows and may require system-level audio dependencies.
 
 ---
 
-## 🎙️ Voice Interaction
+## Web, System & File Capabilities
 
-Zyron includes a local voice pipeline for speech-based interaction.
+### Web Search
 
-### Speech Recognition
-**Faster-Whisper** is used for local speech-to-text processing. The voice input system includes microphone recording, audio calibration, speech detection, silence handling, audio validation, and transcription.
-
-### Speech Synthesis
-**Piper TTS** is used to generate spoken responses. Local voice-model files are kept outside the Git repository.
-
-> Voice features may require system-level audio dependencies such as PortAudio or ffmpeg depending on the operating system.
-
-Zyron is currently developed and tested on Windows. Voice output and application launching use Windows-specific APIs.
-
----
-
-## 🌐 Web Search
-
-Zyron includes a web-search capability based on **DuckDuckGo search results**. This allows Zyron to retrieve external information when a request requires current web data instead of relying entirely on the local language model.
-
----
-
-## 💻 System & File Capabilities
+Zyron can use DuckDuckGo search results when current external information is required.
 
 ### System Information
-Zyron can expose system information such as CPU, RAM, disk, and battery information, current time/date, computer name, and system status — provided through the application's registered capabilities.
 
-### Application Launching
-Applications are launched through a controlled allow-list rather than allowing arbitrary executable paths to be passed directly to the operating system.
+Registered system capabilities can expose:
+
+- CPU
+- RAM
+- disk
+- battery
+- date/time
+- computer name
+- system status
+
+### Application Management
+
+Applications are launched through a controlled allow-list rather than arbitrary executable paths.
 
 ### File Management
-Supported filesystem operations include `Create`, `Read`, `Write`, `Delete`, `Rename`. File operations include path-safety checks, and sensitive operations are protected through the confirmation workflow.
+
+Supported operations include:
+
+```text
+Create
+Read
+Write
+Delete
+Rename
+```
+
+File operations include path-safety checks, with sensitive operations protected by confirmation.
 
 ---
 
-## 🛠️ Technology Stack
+## Technology Stack
 
 | Category | Technology |
 |---|---|
 | Language | Python 3.13 |
-| Local AI Runtime | Ollama |
-| AI Model | phi4-mini |
-| AI Communication | HTTP / Requests |
+| Local AI | Ollama + phi4-mini |
+| AI Communication | Requests / HTTP |
 | Speech-to-Text | Faster-Whisper |
 | Text-to-Speech | Piper TTS |
 | Database | SQLite |
@@ -400,245 +344,210 @@ Supported filesystem operations include `Create`, `Read`, `Write`, `Delete`, `Re
 | Audio Input | SoundDevice |
 | Testing | PyTest |
 | Version Control | Git & GitHub |
-| Target Platform | Windows |
+| Platform | Windows |
 
 ---
 
-## 📂 Repository Structure
+## Repository Structure
 
 ```text
 Zyron/
-│
 ├── assets/
 │   ├── zyron-banner.svg
 │   └── zyron-icon.svg
 │
-├── .gitignore
-├── README.md
-├── requirements.txt
-│
 ├── src/
 │   └── zyron/
-│       │
 │       ├── ai/
-│       │   ├── __init__.py
-│       │   └── ollama_client.py
-│       │
 │       ├── commands/
-│       │   ├── __init__.py
-│       │   ├── ai.py
-│       │   ├── app_manager.py
-│       │   ├── file_manager.py
-│       │   ├── general.py
-│       │   ├── system.py
-│       │   └── web_search.py
-│       │
 │       ├── core/
-│       │   ├── __init__.py
-│       │   ├── agent.py
-│       │   ├── command_processor.py
-│       │   ├── memory.py
-│       │   ├── memory_commands.py
-│       │   ├── router.py
-│       │   ├── state.py
-│       │   ├── tool_loader.py
-│       │   └── tool_registry.py
-│       │
 │       ├── main.py
 │       ├── voice.py
 │       ├── voice_assistant.py
 │       ├── voice_input.py
 │       └── whisper_input.py
 │
-└── tests/
-    ├── performance/
-    │   └── speed_test.py
-    │
-    ├── regression/
-    │   ├── regression_test.py
-    │   ├── regression_test_phase2.py
-    │   └── regression_test_phase3.py
-    │
-    ├── test_argument_safety.py
-    ├── test_clarification_e2e.py
-    ├── test_clarification_safety.py
-    ├── test_multi_argument_clarification.py
-    ├── test_required_argument_validation.py
-    └── test_router_regression.py
+├── tests/
+│   ├── performance/
+│   ├── regression/
+│   ├── test_argument_safety.py
+│   ├── test_clarification_e2e.py
+│   ├── test_clarification_safety.py
+│   ├── test_multi_argument_clarification.py
+│   ├── test_required_argument_validation.py
+│   └── test_router_regression.py
+│
+├── .gitignore
+├── README.md
+└── requirements.txt
 ```
 
 ---
 
-## 🧪 Testing
+## Testing
 
-Testing is an important part of Zyron's development. The automated test suite covers argument safety, clarification safety, end-to-end clarification, multi-argument clarification, required argument validation, router regression, application management, file management, regression scenarios, and performance-related development checks.
-
-### Latest Full Test Result
+The latest full local test run:
 
 ```text
 34 passed
 0 failed
 ```
 
-Run the complete suite:
+Run the full suite:
+
 ```bash
 python -m pytest -q
 ```
 
 Run with detailed output:
+
 ```bash
 python -m pytest -v
 ```
 
 Run argument-safety tests:
+
 ```bash
 python -m pytest tests/test_argument_safety.py -v
 ```
 
 Run multi-argument clarification tests:
+
 ```bash
 python -m pytest tests/test_multi_argument_clarification.py -v
 ```
 
-The test suite provides a reproducible checkpoint for the current v0.1 architecture.
-
-> No GitHub CI pipeline is currently configured.
+No GitHub CI pipeline is currently configured.
 
 ---
 
-## 🚀 Getting Started
-
-Zyron is currently built and tested on **Windows**.
+## Getting Started
 
 ### Prerequisites
+
 - Python 3.13
 - Git
 - Ollama
 - `phi4-mini`
 - Microphone for voice input
-- Required system-level audio dependencies when using voice features
+- Required audio dependencies for voice features
 
-### 1. Clone the Repository
+### Clone
+
 ```bash
 git clone https://github.com/Mustaq7892/Zyron.git
 cd Zyron
 ```
 
-### 2. Create the Python Environment
+### Create Environment
+
 ```bash
 python -m venv .venv313
 ```
 
-Activate it in Windows PowerShell:
+Windows PowerShell:
+
 ```powershell
 .\.venv313\Scripts\Activate.ps1
 ```
 
-### 3. Install Dependencies
+### Install Dependencies
+
 ```bash
 pip install -r requirements.txt
 ```
 
-### 4. Prepare Ollama
-Install Ollama and make the required local model available:
+### Prepare Ollama
+
 ```bash
 ollama pull phi4-mini
 ```
-Make sure the Ollama service is running before starting Zyron.
 
-### 5. Run Zyron
-From the project root:
+Make sure Ollama is running.
+
+### Run
+
 ```bash
 python -m src.zyron.main
 ```
 
 ---
 
-## ⚙️ Configuration
+## Design Philosophy
 
-The current implementation keeps several configuration values in source rather than exposing a formal environment-driven configuration interface.
+### Local-First
 
-Areas represented in the current implementation include:
-- Ollama endpoint
-- model name
-- memory database location
-- audio/runtime behavior
+Inference is designed around a locally running Ollama engine.
 
-Moving these settings into a centralized configuration system or environment variables is planned for a future version.
+### Explicit Capabilities
 
----
-
-## 🔐 Design Philosophy
-
-### 🏠 Local-First
-Inference is designed around a locally running Ollama engine rather than requiring every interaction to be sent to a remote AI service.
-
-### 🧩 Explicit Capabilities
 The agent can only execute capabilities registered with the `ToolRegistry`.
 
-### 🎯 Grounded Arguments
+### Grounded Arguments
+
 Values should come from the user's request rather than being invented by the planner.
 
-### 🛡️ Validate Before Execution
+### Validate Before Execution
+
 Plans and arguments are checked before execution.
 
-### 💬 Clarify Instead of Guessing
-When required information is missing, Zyron asks the user rather than silently assuming a value.
+### Clarify Instead of Guessing
 
-### 🔒 Confirmation for Sensitive Operations
-Operations that can modify the local environment require an additional confirmation step.
+Missing required information results in a clarification request.
 
-### 🧱 Separate Planning from Execution
-The AI helps determine what the user is asking for, while the application determines what is valid and what can actually execute.
+### Confirmation for Sensitive Operations
 
-### 🧪 Test Important Behavior
-Safety-sensitive routing, argument validation, clarification, file operations, application behavior, and regression scenarios are covered by automated tests.
+Operations that modify the local environment require an additional confirmation step.
+
+### Separate Planning from Execution
+
+The AI interprets intent and proposes a plan; application logic determines what is valid and executable.
 
 ---
 
-## 🗺️ Roadmap
+## Roadmap
 
-**Architecture**
-- Split the Agent module into dedicated planning, validation, clarification, and execution components
-- Continue improving capability discovery and planning reliability
-- Improve separation of runtime responsibilities
-
-**Configuration**
-- Move Ollama endpoint and model settings to environment variables
-- Improve audio/runtime configuration
-- Introduce a clearer centralized configuration interface
-
-**Testing & Reliability**
-- Convert additional manual regression/performance checks into asserting `pytest` tests
-- Expand automated coverage
-- Add a GitHub CI workflow
-- Continue performance and reliability improvements
-
-**Platform & Interaction**
+- Improve capability discovery and planning reliability
+- Separate planning, validation, clarification, and execution components further
+- Centralize configuration and move settings toward environment variables
+- Expand automated test coverage
+- Add GitHub CI
+- Improve voice interaction and memory management
 - Extend beyond Windows
-- Improve voice interaction
-- Improve memory management
-- Expand system capabilities
 - Continue strengthening safety controls
-
-**Product Experience**
 - Add a polished terminal/demo recording
-- Improve developer documentation
-- Add a formal `LICENSE` file before formally releasing the project under an open-source license
+- Add a formal open-source `LICENSE` when ready
 
 ---
 
-## 📌 Project Status
+## Project Status
 
 ### Zyron v0.1 — Safe MVP
 
-Zyron has reached a **stable, tested MVP checkpoint**. The current foundation includes local LLM planning, dynamic capability discovery, tool registration, argument grounding, argument validation, multi-turn clarification, confirmation-based sensitive operations, controlled application execution, controlled file operations, SQLite-backed memory, local speech recognition, local text-to-speech, web search, and automated testing.
+Zyron has reached a **stable, tested MVP checkpoint**.
 
-The project is currently **paused at this stable checkpoint** while the surrounding software engineering and data engineering portfolio is being developed. Development can resume from this tested foundation.
+The current foundation includes:
+
+- local LLM planning
+- dynamic capability discovery
+- tool registration
+- parameter inference
+- argument grounding and validation
+- multi-turn clarification
+- confirmation-based sensitive operations
+- controlled application execution
+- controlled file operations
+- SQLite-backed memory
+- local speech recognition
+- local text-to-speech
+- web search
+- automated testing
+
+The project is currently **paused at this stable checkpoint** while the surrounding software engineering and data engineering portfolio is being developed.
 
 ---
 
-## 👨‍💻 About Me
+## About Me
 
 I'm **Shaik Mustaq**, a Software Engineer with over two years of professional experience building backend systems, working with data pipelines, and developing with Python and SQL.
 
@@ -656,9 +565,11 @@ I build practical projects to strengthen my software engineering and data engine
 
 ---
 
-## 📄 License
+## License
 
-A formal open-source license has not yet been added to the repository. The project may be released under the **MIT License** in the future once the corresponding `LICENSE` file is added.
+A formal open-source license has not yet been added to the repository.
+
+The project may be released under the **MIT License** in the future once the corresponding `LICENSE` file is added.
 
 ---
 
