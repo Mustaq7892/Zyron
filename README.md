@@ -1,7 +1,7 @@
-# <img src="assets/zyron-icon.svg" width="32"> Zyron — A Local, Tool-Using AI Assistant
+# <img src="assets/zyron-icon.png" width="32"> Zyron — A Local, Tool-Using AI Assistant
 
 <p align="center">
-  <img src="assets/zyron-banner.svg" alt="Zyron — Personal AI Assistant">
+  <img src="assets/zyron-banner.png" alt="Zyron — Personal AI Assistant">
 </p>
 
 <p align="center">
@@ -353,8 +353,8 @@ File operations include path-safety checks, with sensitive operations protected 
 ```text
 Zyron/
 ├── assets/
-│   ├── zyron-banner.svg
-│   └── zyron-icon.svg
+│   ├── zyron-banner.png
+│   └── zyron-icon.png
 │
 ├── src/
 │   └── zyron/
