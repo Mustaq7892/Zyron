@@ -558,7 +558,7 @@ Instead of relying on an existing agent framework, I built Zyron's planning, cap
 I build practical projects to strengthen my software engineering and data engineering skills through implementation.
 
 <p align="left">
-  <a href="https://www.linkedin.com/in/shaik-mustaq-915741254/">
+  <a href="https://www.linkedin.com/in/skmustaq/">
     <img src="https://img.shields.io/badge/LinkedIn-Connect-ffffff?style=plastic&logo=linkedin&logoColor=0A66C2&labelColor=0A66C2">
   </a>
 </p>
