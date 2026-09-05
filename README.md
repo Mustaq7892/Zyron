@@ -1,4 +1,4 @@
-# 🤖 Zyron — A Local, Tool-Using AI Assistant
+# <img src="assets/zyron-icon.svg" width="32" valign="middle"> Zyron — A Local, Tool-Using AI Assistant
 
 <p align="center">
   <img src="assets/zyron-banner.svg" alt="Zyron — Personal AI Assistant">
@@ -9,10 +9,10 @@
 </p>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/python-3.13-blue?style=flat-square&logo=python&logoColor=white">
-  <img src="https://img.shields.io/badge/tests-34%20passing-brightgreen?style=flat-square&logo=pytest&logoColor=white">
-  <img src="https://img.shields.io/badge/AI-local--first%20(Ollama)-2563eb?style=flat-square">
-  <img src="https://img.shields.io/badge/platform-Windows-informational?style=flat-square&logo=windows&logoColor=white">
+  <img src="https://img.shields.io/badge/python-3.13-blue?style=plastic&logo=python&logoColor=white">
+  <img src="https://img.shields.io/badge/tests-34%20passing-brightgreen?style=plastic&logo=pytest&logoColor=white">
+  <img src="https://img.shields.io/badge/AI-local--first%20(Ollama)-2563eb?style=plastic">
+  <img src="https://img.shields.io/badge/platform-Windows-informational?style=plastic&logo=windows&logoColor=white">
 </p>
 
 ---
